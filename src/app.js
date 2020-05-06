@@ -39,11 +39,11 @@ io.on("connection", function (socket) {
 
   socket.on("CONNECT-ROOM-CHAT", function (data) {
     socket.join(data.id);
-    socket.emit("CONNECT-ROOM-CHAT-SUCCESS", { id: data.id });
+    socket.emit("CONNECT-ROOM-CHAT-SUCCESS", { id: data.id, name: data.name });
   });
 
   socket.on("NEW-MESSAGE", function (data) {
-    socket.to(data.currentRoom).emit("NEW-MESSAGE", { message: data.message });
+    socket.to(data.currentRoom).emit("NEW-MESSAGE", { ...data, id: socket.id });
   });
   console.log("Client connected...");
 });

@@ -1,8 +1,14 @@
 const socket = io.connect("http://localhost:3000");
 
 const listRooms = $("#list-rooms");
-let currentRoom;
+let currentRoom, userName;
 
+while (!userName) {
+  userName = prompt("Nhap vao ten cua ban");
+}
+
+$("#name").html(userName);
+console.log($("#name"));
 /**
  *
  *
@@ -41,20 +47,46 @@ socket.on("RETURN-GET-ROOMS", function (data) {
 
 socket.on("CONNECT-ROOM-CHAT-SUCCESS", function (data) {
   const id = data.id;
+  // console.log(data);
+  if (!$(`#${id}`).length) {
+    addNewRoomHtml(listRooms, data);
+    $(".list-group-item").on("click", function () {
+      const id = $(this).attr("id");
+      socket.emit("CONNECT-ROOM-CHAT", { id });
+    });
+  }
   $(".list-group-item.active").removeClass("active");
   $(`#${id}`).addClass("active");
+  $("#chat-box").empty();
   currentRoom = id;
 });
 
 socket.on("NEW-MESSAGE", function (data) {
-  $("#chat-box").append(`<div class="media w-50 mb-3">
+  if (!$(`#${data.currentRoom}`).length) {
+    addNewRoomHtml(listRooms, { id: data.currentRoom, name: data.userName });
+    $(".list-group-item").on("click", function () {
+      const id = $(this).attr("id");
+      socket.emit("CONNECT-ROOM-CHAT", { id });
+    });
+  }
+  if (data.currentRoom === currentRoom) {
+    $("#chat-box").append(`<div class="media w-50 mb-3">
               <div class="media-body ml-3">
-                <b class="client" data-id="zlFgvbic1EYmxfQwAAAB" data-name="Nguyen Van B">Nguyen Van B</b>
+                <b class="client" data-id="${data.id}" data-name="${data.userName}">${data.userName}</b>
                 <div class="bg-light rounded py-2 px-3 mb-2">
                   <p class="text-small mb-0 text-muted">${data.message}</p>
                 </div>
               </div>
-            </div>`);
+    </div>`);
+    $(".client").on("click", function (e) {
+      const self = $(this);
+      const id = self.data("id");
+      const name = self.data("name");
+      socket.emit("CONNECT-ROOM-CHAT", { id, name });
+      // console.log(data)
+    });
+    $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
+  }
 });
 
 $("#input-message").keyup(function (e) {
@@ -62,7 +94,7 @@ $("#input-message").keyup(function (e) {
   if (e.keyCode === 13) {
     const value = self.val();
     self.val("");
-    socket.emit("NEW-MESSAGE", { message: value, currentRoom });
+    socket.emit("NEW-MESSAGE", { message: value, currentRoom, userName });
     $("#chat-box").append(`<div class="media w-50 mb-3 ml-auto">
               <div class="media-body ml-3">
                 <div class="bg-primary rounded py-2 px-3 mb-2">
@@ -71,6 +103,7 @@ $("#input-message").keyup(function (e) {
               </div>
       </div>`);
   }
+  $("#chat-box").scrollTop($("#chat-box")[0].scrollHeight);
 });
 
 // $(document).ready(function () {
@@ -79,4 +112,3 @@ $(".list-group-item").on("click", function (e) {
   console.log(e);
 });
 // });
-
